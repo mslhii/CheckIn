@@ -70,8 +70,9 @@ public class MainActivity extends ActionBarActivity {
     }
 
     public void fetchContacts() {
-        String phoneName = null;
-        String phoneNumber = null;
+        String[] dbEntry = null;
+        dbEntry[0] = "";
+        dbEntry[1] = "";
 
         Uri CONTENT_URI = ContactsContract.Contacts.CONTENT_URI;
         String _ID = ContactsContract.Contacts._ID;
@@ -91,7 +92,7 @@ public class MainActivity extends ActionBarActivity {
 
             while (cursor.moveToNext()) {
                 String contact_id = cursor.getString(cursor.getColumnIndex( _ID ));
-                String name = cursor.getString(cursor.getColumnIndex( DISPLAY_NAME ));
+                dbEntry[0] = cursor.getString(cursor.getColumnIndex( DISPLAY_NAME ));
 
                 int hasPhoneNumber = Integer.parseInt(cursor.getString(cursor.getColumnIndex( HAS_PHONE_NUMBER )));
 
@@ -101,7 +102,7 @@ public class MainActivity extends ActionBarActivity {
                     // Query and loop for every phone number of the contact
                     Cursor phoneCursor = contentResolver.query(PhoneCONTENT_URI, null, Phone_CONTACT_ID + " = ?", new String[] { contact_id }, null);
                     while (phoneCursor.moveToNext()) {
-                        phoneNumber = phoneCursor.getString(phoneCursor.getColumnIndex(NUMBER));
+                        dbEntry[1] = phoneCursor.getString(phoneCursor.getColumnIndex(NUMBER));
                         //output.append("\n Phone number:" + phoneNumber);
                     }
                     phoneCursor.close();
@@ -109,7 +110,10 @@ public class MainActivity extends ActionBarActivity {
                 //output.append("\n");
             }
             //outputText.setText(output);
+            this.dbList.add(dbEntry);
         }
+
+        cursor.close();
     }
 
 }
