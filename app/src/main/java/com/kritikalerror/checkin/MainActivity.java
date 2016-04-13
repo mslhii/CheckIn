@@ -7,6 +7,7 @@ import android.net.Uri;
 import android.provider.ContactsContract;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -23,7 +24,7 @@ public class MainActivity extends ActionBarActivity {
 
     private ListView listView;
     DBHelper dbHelper;
-    private ArrayList<String[]> dbList = new ArrayList<String[]>();
+    private ArrayList<String> dbList = new ArrayList<String>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,19 +39,20 @@ public class MainActivity extends ActionBarActivity {
             }
         });
 
-        dbHelper = new DBHelper(this);
-
-        final Cursor cursor = dbHelper.getAllPersons();
-        String [] columns = new String[] {
-                DBHelper.PERSON_COLUMN_ID,
-                DBHelper.PERSON_COLUMN_NAME
-        };
-        int [] widgets = new int[] {
-                R.id.personID
-        };
+//        dbHelper = new DBHelper(this);
+//
+//        final Cursor cursor = dbHelper.getAllPersons();
+//        String [] columns = new String[] {
+//                DBHelper.PERSON_COLUMN_ID,
+//                DBHelper.PERSON_COLUMN_NAME
+//        };
+//        int [] widgets = new int[] {
+//                R.id.personID
+//        };
 
 //        SimpleCursorAdapter cursorAdapter = new SimpleCursorAdapter(this, R.layout.person_info,
 //                cursor, columns, widgets, 0);
+        this.fetchContacts();
         final ArrayAdapter listAdapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, this.dbList);
         listView = (ListView)findViewById(R.id.listView1);
         listView.setAdapter(listAdapter);
@@ -59,20 +61,21 @@ public class MainActivity extends ActionBarActivity {
             @Override
             public void onItemClick(AdapterView<?> listView, View view,
                                     int position, long id) {
-                Cursor itemCursor = (Cursor) MainActivity.this.listView.getItemAtPosition(position);
-                int personID = itemCursor.getInt(itemCursor.getColumnIndex(DBHelper.PERSON_COLUMN_ID));
-                Intent intent = new Intent(getApplicationContext(), CreateOrEditActivity.class);
-                intent.putExtra(KEY_EXTRA_CONTACT_ID, personID);
-                startActivity(intent);
+//                Cursor itemCursor = (Cursor) MainActivity.this.listView.getItemAtPosition(position);
+//                int personID = itemCursor.getInt(itemCursor.getColumnIndex(DBHelper.PERSON_COLUMN_ID));
+//                Intent intent = new Intent(getApplicationContext(), CreateOrEditActivity.class);
+//                intent.putExtra(KEY_EXTRA_CONTACT_ID, personID);
+//                startActivity(intent);
+                Toast.makeText(getApplicationContext(), "Checking in!", Toast.LENGTH_SHORT).show();
             }
         });
 
     }
 
     public void fetchContacts() {
-        String[] dbEntry = null;
-        dbEntry[0] = "";
-        dbEntry[1] = "";
+        String name = "";
+        String number = "";
+        String combine = "";
 
         Uri CONTENT_URI = ContactsContract.Contacts.CONTENT_URI;
         String _ID = ContactsContract.Contacts._ID;
@@ -91,28 +94,32 @@ public class MainActivity extends ActionBarActivity {
         if (cursor.getCount() > 0) {
 
             while (cursor.moveToNext()) {
-                String contact_id = cursor.getString(cursor.getColumnIndex( _ID ));
-                dbEntry[0] = cursor.getString(cursor.getColumnIndex( DISPLAY_NAME ));
+                String contact_id = cursor.getString(cursor.getColumnIndex(_ID));
+                name = cursor.getString(cursor.getColumnIndex(DISPLAY_NAME));
 
-                int hasPhoneNumber = Integer.parseInt(cursor.getString(cursor.getColumnIndex( HAS_PHONE_NUMBER )));
+                int hasPhoneNumber = Integer.parseInt(cursor.getString(cursor.getColumnIndex(HAS_PHONE_NUMBER)));
 
                 if (hasPhoneNumber > 0) {
-                    //output.append("\n First Name:" + name);
-
                     // Query and loop for every phone number of the contact
                     Cursor phoneCursor = contentResolver.query(PhoneCONTENT_URI, null, Phone_CONTACT_ID + " = ?", new String[] { contact_id }, null);
                     while (phoneCursor.moveToNext()) {
-                        dbEntry[1] = phoneCursor.getString(phoneCursor.getColumnIndex(NUMBER));
-                        //output.append("\n Phone number:" + phoneNumber);
+                        number = phoneCursor.getString(phoneCursor.getColumnIndex(NUMBER));
                     }
                     phoneCursor.close();
                 }
-                //output.append("\n");
-            }
-            //outputText.setText(output);
-            this.dbList.add(dbEntry);
-        }
 
+                if(!number.equals("")) {
+                    combine = name + "\n" + number;
+                    Log.e("TAG", "Added to list: " + name + ", " + number);
+                    this.dbList.add(combine);
+                    number = "";
+                    name = "";
+                }
+            }
+//            combine = name + "\n" + number;
+//            Log.e("TAG", "Added to list: " + name + ", " + number);
+//            this.dbList.add(combine);
+        }
         cursor.close();
     }
 
