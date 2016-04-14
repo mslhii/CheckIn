@@ -1,12 +1,16 @@
 package com.kritikalerror.checkin;
 
 import android.content.ContentResolver;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.ContactsContract;
+import android.support.annotation.IntegerRes;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
+import android.telephony.SmsManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -17,10 +21,12 @@ import android.widget.SimpleCursorAdapter;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 
 public class MainActivity extends ActionBarActivity {
     public final static String KEY_EXTRA_CONTACT_ID = "KEY_EXTRA_CONTACT_ID";
+    private final String smsMessage = "Are you ok?";
 
     private ListView listView;
     DBHelper dbHelper;
@@ -39,19 +45,6 @@ public class MainActivity extends ActionBarActivity {
             }
         });
 
-//        dbHelper = new DBHelper(this);
-//
-//        final Cursor cursor = dbHelper.getAllPersons();
-//        String [] columns = new String[] {
-//                DBHelper.PERSON_COLUMN_ID,
-//                DBHelper.PERSON_COLUMN_NAME
-//        };
-//        int [] widgets = new int[] {
-//                R.id.personID
-//        };
-
-//        SimpleCursorAdapter cursorAdapter = new SimpleCursorAdapter(this, R.layout.person_info,
-//                cursor, columns, widgets, 0);
         this.fetchContacts();
         final ArrayAdapter listAdapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, this.dbList);
         listView = (ListView)findViewById(R.id.listView1);
@@ -61,15 +54,51 @@ public class MainActivity extends ActionBarActivity {
             @Override
             public void onItemClick(AdapterView<?> listView, View view,
                                     int position, long id) {
-//                Cursor itemCursor = (Cursor) MainActivity.this.listView.getItemAtPosition(position);
-//                int personID = itemCursor.getInt(itemCursor.getColumnIndex(DBHelper.PERSON_COLUMN_ID));
-//                Intent intent = new Intent(getApplicationContext(), CreateOrEditActivity.class);
-//                intent.putExtra(KEY_EXTRA_CONTACT_ID, personID);
-//                startActivity(intent);
-                Toast.makeText(getApplicationContext(), "Checking in!", Toast.LENGTH_SHORT).show();
+                AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
+                final int pos = position;
+
+                alertDialogBuilder.setTitle("Are you sure?");
+                alertDialogBuilder
+                        .setMessage("Send this SMS?")
+                        .setCancelable(false)
+                        .setPositiveButton("Yes",new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog,int id) {
+                                String item = (String) MainActivity.this.listView.getItemAtPosition(pos);
+                                int splitPosition = item.indexOf("\n");
+                                String userNumber = item.substring(splitPosition);
+                                Toast.makeText(getApplicationContext(), "Checking in to " + userNumber + "!", Toast.LENGTH_SHORT).show();
+                                MainActivity.this.sendSMS(userNumber);
+                            }
+                        })
+                        .setNegativeButton("No",new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                                dialog.cancel();
+                            }
+                        });
+
+                // Test only, do not use in production!
+                AlertDialog alertDialog = alertDialogBuilder.create();
+                alertDialog.show();
+
+//                String item = (String) MainActivity.this.listView.getItemAtPosition(position);
+//                int splitPosition = item.indexOf("\n");
+//                String userNumber = item.substring(splitPosition);
+//                Toast.makeText(getApplicationContext(), "Checking in to " + userNumber + "!", Toast.LENGTH_SHORT).show();
+//                MainActivity.this.sendSMS(userNumber);
             }
         });
 
+    }
+
+    public void sendSMS(String number){
+        try {
+            SmsManager smsManager = SmsManager.getDefault();
+            smsManager.sendTextMessage(number, null, this.smsMessage, null, null);
+            Toast.makeText(getApplicationContext(), "Sent Check-In", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_LONG).show();
+            e.printStackTrace();
+        }
     }
 
     public void fetchContacts() {
@@ -116,10 +145,10 @@ public class MainActivity extends ActionBarActivity {
                     name = "";
                 }
             }
-//            combine = name + "\n" + number;
-//            Log.e("TAG", "Added to list: " + name + ", " + number);
-//            this.dbList.add(combine);
         }
+        // Sort the array before finishing
+        Collections.sort(this.dbList, String.CASE_INSENSITIVE_ORDER);
+
         cursor.close();
     }
 
